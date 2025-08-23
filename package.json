@@ -1,0 +1,19 @@
+{
+  "name": "messaging-services",
+  "private": true,
+  "workspace": [
+    "services/*",
+    "gateway",
+    "shared"
+  ],
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9"
+  }
+}

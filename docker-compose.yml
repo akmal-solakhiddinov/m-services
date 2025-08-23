@@ -1,0 +1,106 @@
+version: '3.4'
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+      target: development
+
+    ports:
+      - "4000:4000"
+
+    command: npm run dev
+
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+
+  auth:
+    build:
+      context: ./services/auth
+      target: development
+
+    ports:
+      - "4001:4001"
+
+    command: npm run dev
+
+    volumes:
+      - ./services/auth:/app
+      - /app/node_modules
+
+  user:
+    build:
+      context: ./services/user
+      target: development
+
+    ports:
+      - "4002:4002"
+
+    command: npm run dev
+
+    volumes:
+      - ./services/user:/app
+      - /app/node_modules
+
+  message:
+    build:
+      context: ./services/message
+      target: development
+
+    ports:
+      - "4003:4003"
+
+    command: npm run dev
+
+    volumes:
+      - ./services/message:/app
+      - /app/node_modules
+
+  request:
+    build:
+      context: ./services/request
+      target: development
+
+    ports:
+      - "4004:4004"
+
+    command: npm run dev
+
+    volumes:
+      - ./services/request:/app
+      - /app/node_modules
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    ports:
+      - "5173:5173"   # Vite default dev port
+    environment:
+    - VITE_API_URL=http://gateway:4000
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+
+  db:
+    image: postgres
+    restart: always
+    user: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=password
+    expose:
+      - "5432:5432"
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:

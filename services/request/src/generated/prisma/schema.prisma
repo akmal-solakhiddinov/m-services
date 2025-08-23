@@ -1,0 +1,166 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ChatRoom {
+  id                 String  @id @default(uuid())
+  userOneId          String
+  userTwoId          String
+  unSeenMessageCount Int     @default(0)
+  lastMessageId      String? @unique
+
+  lastMessage Message?  @relation("ChatRoom_lastMessage", fields: [lastMessageId], references: [id], onDelete: Cascade)
+  userOne     User      @relation("ChatRoom_userOne", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwo     User      @relation("ChatRoom_userTwo", fields: [userTwoId], references: [id], onDelete: Cascade)
+  messages    Message[] @relation("ChatRoom_messages")
+  Message     Message[] @relation("lastMessage")
+
+  @@index([lastMessageId], map: "idx_lastMessage")
+  @@index([userOneId], map: "idx_userOneId")
+  @@index([userTwoId], map: "idx_userTwoId")
+}
+
+model Friends {
+  id               String                   @id @default(uuid())
+  userId           String
+  relatedUserId    String
+  relationshipType Friends_relationshipType
+  status           Friends_status
+  created          DateTime                 @default(now())
+  updated          DateTime                 @updatedAt
+
+  user        User @relation("Friends_user", fields: [userId], references: [id])
+  relatedUser User @relation("Friends_relatedUser", fields: [relatedUserId], references: [id])
+
+  @@unique([userId, relatedUserId])
+  @@index([relatedUserId], map: "idx_relatedUserId")
+}
+
+model Message {
+  id         String            @id @default(uuid())
+  content    String?           @db.Text
+  file       String?           @db.Text
+  fileType   Message_fileType?
+  senderId   String
+  receiverId String
+  chatId     String
+  status     Message_status    @default(unseen)
+  created    DateTime          @default(now())
+  updated    DateTime          @updatedAt
+  deleted    Boolean           @default(false)
+
+  chatRoomLast ChatRoom?  @relation("lastMessage", fields: [id], references: [lastMessageId])
+  chatRoom     ChatRoom   @relation("ChatRoom_messages", fields: [chatId], references: [id], onDelete: Cascade)
+  receiver     User       @relation("Message_receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender       User       @relation("Message_sender", fields: [senderId], references: [id], onDelete: Cascade)
+  ChatRoom     ChatRoom[] @relation("ChatRoom_lastMessage")
+
+  @@index([chatId], map: "idx_chatId")
+  @@index([receiverId], map: "idx_receiverId")
+  @@index([senderId], map: "idx_senderId")
+}
+
+model Request {
+  id       String         @id @default(uuid())
+  senderId String
+  friendId String
+  status   Request_status @default(pending)
+  created  DateTime       @default(now())
+  updated  DateTime       @updatedAt
+
+  sender User @relation("Request_sender", fields: [senderId], references: [id], onDelete: Cascade)
+  friend User @relation("Request_friend", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, friendId])
+  @@index([friendId], map: "idx_friendId")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  ip        String
+  device    String
+  userAgent String
+  created   DateTime @default(now())
+  updated   DateTime @updatedAt
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_userId")
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  username    String?      @unique
+  fullName    String?
+  status      User_status  @default(offline)
+  lastLogin   DateTime?
+  password    String
+  image       String?      @db.Text
+  isActivated Boolean      @default(false)
+  created     DateTime     @default(now())
+  updated     DateTime     @updatedAt
+  deleted     Boolean      @default(false)
+  account     User_account @default(public)
+
+  chatRoomsOne     ChatRoom[] @relation("ChatRoom_userOne")
+  chatRoomsTwo     ChatRoom[] @relation("ChatRoom_userTwo")
+  friends          Friends[]  @relation("Friends_user")
+  relatedFriends   Friends[]  @relation("Friends_relatedUser")
+  receivedMessages Message[]  @relation("Message_receiver")
+  sentMessages     Message[]  @relation("Message_sender")
+  receivedRequests Request[]  @relation("Request_friend")
+  sentRequests     Request[]  @relation("Request_sender")
+  sessions         Session[]
+
+  @@index([email], map: "idx_email")
+  @@index([username], map: "idx_username")
+}
+
+enum Request_status {
+  pending
+  approved
+  rejected
+}
+
+enum Message_fileType {
+  IMAGE
+  VIDEO
+  FILE
+  AUDIO
+}
+
+enum Friends_relationshipType {
+  friend
+  blocked
+}
+
+enum User_status {
+  online
+  offline
+}
+
+enum Friends_status {
+  active
+  removed
+}
+
+enum Message_status {
+  seen
+  unseen
+}
+
+enum User_account {
+  private
+  public
+}

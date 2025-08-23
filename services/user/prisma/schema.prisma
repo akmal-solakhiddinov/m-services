@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ChatRoom {
+  id                 String    @id @default(uuid())
+  userOneId          String
+  userTwoId          String
+  unSeenMessageCount Int       @default(0)
+  lastMessageId      String?   @unique
+  created            DateTime  @default(now())
+  updated            DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  lastMessage Message?  @relation("LastMessageInChat", fields: [lastMessageId], references: [id], onDelete: Cascade)
+  userOne     User      @relation("UserOneChats", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwo     User      @relation("UserTwoChats", fields: [userTwoId], references: [id], onDelete: Cascade)
+  messages    Message[] @relation("ChatMessages")
+
+  @@index([lastMessageId], map: "idx_lastMessage")
+  @@index([userOneId], map: "idx_userOneId")
+  @@index([userTwoId], map: "idx_userTwoId")
+  @@index([userOneId, userTwoId], map: "idx_chat_participants")
+}
+
+model Friends {
+  id               String                   @id @default(uuid())
+  userId           String
+  relatedUserId    String
+  relationshipType Friends_relationshipType
+  status           Friends_status
+  created          DateTime                 @default(now())
+  updated          DateTime                 @updatedAt
+  notes            String?                  @db.VarChar(500)
+
+  user        User @relation("FriendsAsUser", fields: [userId], references: [id])
+  relatedUser User @relation("FriendsAsRelated", fields: [relatedUserId], references: [id])
+
+  @@unique([userId, relatedUserId])
+  @@index([relatedUserId], map: "idx_relatedUserId")
+}
+
+model Message {
+  id           String            @id @default(uuid())
+  content      String?           @db.Text
+  file         String?
+  fileType     Message_fileType?
+  senderId     String
+  receiverId   String
+  chatId       String
+  status       Message_status    @default(unseen)
+  created      DateTime          @default(now())
+  updated      DateTime          @updatedAt
+  deleted      Boolean           @default(false)
+  deletedAt    DateTime?
+  readAt       DateTime?
+  replyToId    String?
+  
+  // Engagement metrics
+  reactions    Reaction[]
+  
+  // Relations
+  chatRoom     ChatRoom          @relation("ChatMessages", fields: [chatId], references: [id], onDelete: Cascade)
+  lastInChat   ChatRoom?         @relation("LastMessageInChat")
+  sender       User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver     User              @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyTo      Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]         @relation("MessageReplies")
+
+  @@index([chatId], map: "idx_chatId")
+  @@index([receiverId], map: "idx_receiverId")
+  @@index([senderId], map: "idx_senderId")
+  @@index([replyToId], map: "idx_replyToId")
+  @@index([created], map: "idx_message_created")
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String   @db.VarChar(10)
+  created   DateTime @default(now())
+  
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId, emoji])
+  @@index([messageId], map: "idx_reaction_messageId")
+  @@index([userId], map: "idx_reaction_userId")
+}
+
+model Request {
+  id       String         @id @default(uuid())
+  senderId String
+  friendId String
+  status   Request_status @default(pending)
+  message  String?        @db.VarChar(500)
+  created  DateTime       @default(now())
+  updated  DateTime       @updatedAt
+
+  sender User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  friend User @relation("ReceivedRequests", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, friendId])
+  @@index([friendId], map: "Request_friendId_fkeyidx")
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique @db.VarChar(500)
+  ip        String
+  device    String
+  userAgent String
+  created   DateTime  @default(now())
+  updated   DateTime  @updatedAt
+  expiresAt DateTime
+  active    Boolean   @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_userId")
+  @@index([token], map: "idx_token")
+}
+
+model Contact {
+  id          String    @id @default(uuid())
+  userId      String
+  contactId   String    // If the contact is a registered user
+  notes       String?   @db.Text
+  created     DateTime  @default(now())
+  updated     DateTime  @updatedAt
+  isFavorite  Boolean   @default(false)
+  isBlocked   Boolean   @default(false)
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactUser User      @relation("UserContacts", fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, contactId])
+  @@index([userId], map: "idx_contact_userId")
+  @@index([contactId], map: "idx_contact_contactId")
+}
+
+model User {
+  id                    String       @id @default(uuid())
+  email                 String       @unique @db.VarChar(255)
+  username              String?      @unique @db.VarChar(50)
+  fullName              String?      @db.VarChar(100)
+  status                User_status  @default(offline)
+  lastLogin             DateTime?
+  password              String
+  image                 String?
+  bio                   String?      @db.VarChar(500)
+  isActivated           Boolean      @default(false)
+  created               DateTime     @default(now())
+  updated               DateTime     @updatedAt
+  deleted               Boolean      @default(false)
+  deletedAt             DateTime?
+  account               User_account @default(public)
+  phoneNumber           String?      @db.VarChar(50)
+  
+  // Relations
+  userOneChats          ChatRoom[]   @relation("UserOneChats")
+  userTwoChats          ChatRoom[]   @relation("UserTwoChats")
+  sentMessages          Message[]    @relation("SentMessages")
+  receivedMessages      Message[]    @relation("ReceivedMessages")
+  friendsAsUser         Friends[]    @relation("FriendsAsUser")
+  friendsAsRelated      Friends[]    @relation("FriendsAsRelated")
+  sentRequests          Request[]    @relation("SentRequests")
+  receivedRequests      Request[]    @relation("ReceivedRequests")
+  sessions              Session[]
+  contacts              Contact[]
+  contactsAsUser        Contact[]    @relation("UserContacts")
+  reactions             Reaction[]
+
+  @@index([email], map: "idx_email")
+  @@index([id], map: "idx_id")
+  @@index([username], map: "idx_username")
+  @@index([phoneNumber], map: "idx_phoneNumber")
+}
+
+enum Request_status {
+  pending
+  approved
+  rejected
+}
+
+enum Message_fileType {
+  IMAGE
+  VIDEO
+  FILE
+  AUDIO
+  DOCUMENT
+  VOICE_NOTE
+  STICKER
+  GIF
+}
+
+enum Friends_relationshipType {
+  friend
+  blocked
+  limited
+  close
+}
+
+enum User_status {
+  online
+  offline
+  away
+  busy
+}
+
+enum Friends_status {
+  active
+  removed
+}
+
+enum Message_status {
+  seen
+  unseen
+  delivered
+}
+
+enum User_account {
+  private
+  public
+}
