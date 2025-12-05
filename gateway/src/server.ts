@@ -100,7 +100,8 @@ if (NODE_ENV === 'development') {
 // Socket.IO Configuration
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', `${process.env.CLIENT_URL}`],
+    // origin: ["*",   /^http:\/\/192\.168\.\d+\.\d+:5173$/,'http://localhost:5173', `${process.env.CLIENT_URL}`, "http://192.168.122.1:5173" ],
+    origin:true,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -376,7 +377,8 @@ export { io };
 // CORS configuration
 app.use(
   cors({
-    origin: ['http://localhost:5173', `${process.env.CLIENT_URL}`],
+    // origin: ['http://localhost:5173', `${process.env.CLIENT_URL}`],
+    origin:true,
     credentials: true,
   }),
 );

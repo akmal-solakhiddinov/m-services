@@ -21,7 +21,7 @@ const MyProfile = () => {
   useEffect(() => {
     const handleSessionFetch = async () => {
       try {
-        const req  = await fetch("")
+        // const req  = await fetch("")
       } catch (error) {}
     };
 

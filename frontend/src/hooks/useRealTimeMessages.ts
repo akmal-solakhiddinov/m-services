@@ -36,16 +36,16 @@ const useRealTimeMessages = (roomId: string | undefined) => {
 
   useEffect(() => {
     if (isConnected) {
-      socket.emit("joinRoom", roomId);
-      socket.on("message", handleNewMessage);
-      socket.on("messageSeenAck", (data)=>{
+      socket?.emit("joinRoom", roomId);
+      socket?.on("message", handleNewMessage);
+      socket?.on("messageSeenAck", (data)=>{
         console.log(data, '<--data')
         handleSeenMessage(data.messageIds)
       });
 
       return () => {
-        socket.off("message", handleNewMessage);
-        // socket.off("messageSeenAck", handleNewMessage);
+        socket?.off("message", handleNewMessage);
+        // socket?.off("messageSeenAck", handleNewMessage);
       };
     }
   }, [handleNewMessage, isConnected, socket, roomId]);

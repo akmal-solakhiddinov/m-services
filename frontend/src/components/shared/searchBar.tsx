@@ -50,7 +50,7 @@ const SearchBar: React.FC<Props> = ({ closeBtn }) => {
                                                 `flex last:mb-20 items-center p-2 rounded-lg cursor-pointer ${isActive ? 'bg-slate-600 text-white' : 'hover:bg-slate-600'
                                                 }`
                                             }>
-                                            <UserItem user={result} />
+                                            <UserItem user={result } />
                                         </NavLink >
                                     ))}
                                 </ScrollArea>

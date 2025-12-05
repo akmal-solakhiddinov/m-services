@@ -176,7 +176,7 @@ const VideoCall = () => {
             // console.log("Created answer:", answer)
 
             await pc.setLocalDescription(answer);
-            socket.emit("answer", { answer, roomId, myId });
+            socket?.emit("answer", { answer, roomId, myId });
             setIncomingCall(null);
             // console.log("Connection State after answer:", pc.connectionState)
 
@@ -306,7 +306,7 @@ const VideoCall = () => {
                 await pc.setLocalDescription(offer);
 
                 if (user?.id)
-                    socket.emit('offer', {
+                    socket?.emit('offer', {
                         offer,
                         roomId: friend,
                         myId: user?.id

@@ -1,8 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/authContext";
-import { useLocation } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+// import { useLocation } from "react-router-dom";
+// import { useToast } from "@/components/ui/use-toast";
 import useRoomFetch from "./useRoomFetch";
 
 // Create socket instance outside the component to prevent recreation
@@ -10,21 +10,21 @@ let socketInstance: Socket | null = null;
 
 const useSocket = () => {
   const { isAuth, user, isActivated } = useAuth();
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
-  const { pathname } = useLocation();
+  // const { pathname } = useLocation();
   const { rooms } = useRoomFetch();
 
   const roomsRef = useRef(rooms);
-  const pathnameRef = useRef(pathname);
+  // const pathnameRef = useRef(pathname);
 
   useEffect(() => {
     roomsRef.current = rooms;
   }, [rooms]);
 
-  useEffect(() => {
-    pathnameRef.current = pathname;
-  }, [pathname]);
+  // useEffect(() => {
+    // pathnameRef.current = pathname;
+  // }, [pathname]);
 
   useEffect(() => {
     if (!isAuth || !isActivated || !user?.id) {
@@ -77,18 +77,7 @@ const useSocket = () => {
         console.log(userId, "-----user joined-----");
       });
 
-      socketInstance.on("message", (message) => {
-        const roomId = pathnameRef.current.split("/")[2];
-
-        if (roomId === message.chatId) {
-          return;
-        } else {
-          toast({
-            title: "New Message",
-            description: message.content || "No content",
-          });
-        }
-      });
+   
 
       socketInstance.on("candidate", (message) => {
         console.log("ICE candidate received: ", message);
@@ -157,7 +146,7 @@ const useSocket = () => {
         socketInstance.removeAllListeners();
       }
     };
-  }, [isAuth, isActivated, user?.id, toast]); // Minimal dependency array
+  }, [isAuth, isActivated, user?.id,]); // Minimal dependency array
 
   // Method to manually disconnect (use when logging out)
   const disconnect = () => {
